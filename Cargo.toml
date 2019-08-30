@@ -1,0 +1,16 @@
+[package]
+name = "openshift-update"
+version = "0.1.0"
+authors = ["Alex Crawford <crawford@redhat.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+env_logger = "0.6.2"
+kube = { version = "0.15.1", git = "https://github.com/clux/kube-rs" }
+log = "0.4.8"
+semver = { version = "0.9.0", features = [ "serde" ] }
+serde = { version = "1.0.99", features = [ "derive" ] }
+serde_json = "1.0.40"
+structopt = "0.3.0"
