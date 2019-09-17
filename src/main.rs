@@ -15,6 +15,7 @@
 #[macro_use]
 extern crate log;
 
+use chrono::{DateTime, Utc};
 use kube::api::{self, Api, PatchParams, Reflector};
 use kube::client::APIClient;
 use kube::config;
@@ -43,6 +44,7 @@ struct ClusterVersionSpec {
 struct ClusterVersionStatus {
     #[serde(rename = "availableUpdates")]
     available_updates: Option<Vec<ClusterUpdate>>,
+    history: Vec<HistoricalEntry>,
 }
 
 #[derive(Clone, Debug, Eq, serde::Deserialize, serde::Serialize)]
@@ -68,6 +70,12 @@ impl PartialEq for ClusterUpdate {
     fn eq(&self, other: &Self) -> bool {
         self.version == other.version
     }
+}
+
+#[derive(Clone, Debug, Default, serde::Deserialize, serde::Serialize)]
+struct HistoricalEntry {
+    #[serde(rename = "completionTime")]
+    completion_time: Option<DateTime<Utc>>,
 }
 
 type ClusterVersion = api::Object<ClusterVersionSpec, ClusterVersionStatus>;
@@ -111,6 +119,15 @@ fn main() -> Result<(), kube::Error> {
                         continue;
                     }
                 };
+
+                if let Some(status) = &version.status {
+                    if let Some(latest) = status.history.first() {
+                        if latest.completion_time.is_none() {
+                            debug!("Waiting for update to complete...");
+                            continue;
+                        }
+                    }
+                }
 
                 if let Err(error) = apply_available_update(&client, &options, version) {
                     error!("Failed to apply update: {}", error)
